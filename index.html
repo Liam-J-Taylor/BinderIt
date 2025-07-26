@@ -3,25 +3,32 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BinderIt</title>
+<title>Pokémon Binder</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     background: #f0f4f8;
     color: #222;
     padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
   }
   h1 {
     margin-bottom: 10px;
   }
-  label, select {
+  label {
     font-weight: bold;
   }
   #binder {
     margin-top: 20px;
     display: grid;
     gap: 6px;
-    justify-content: start;
+    justify-content: center;
   }
   .cell {
     width: 90px;
@@ -49,64 +56,249 @@
     font-size: 0.9em;
     color: #555;
   }
+  #pager {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    user-select: none;
+  }
+  .arrow {
+    font-weight: bold;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 2px solid #888;
+    border-radius: 5px;
+    background: white;
+    user-select: none;
+    transition: background-color 0.2s;
+  }
+  .arrow:hover {
+    background-color: #ffcb05;
+    border-color: #ffaa00;
+  }
+  #pageInfo {
+    font-weight: bold;
+  }
+  .size-inputs {
+    margin-top: 10px;
+  }
+  .size-inputs label {
+    margin-right: 8px;
+  }
+  input[type="number"] {
+    width: 50px;
+    padding: 4px;
+    margin-right: 20px;
+    font-weight: bold;
+  }
+  button {
+    padding: 6px 12px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    border: 2px solid #888;
+    background: white;
+    transition: background-color 0.2s;
+  }
+  button:hover {
+    background-color: #ffcb05;
+    border-color: #ffaa00;
+  }
 </style>
 </head>
 <body>
+<div class="container">
 
-<h1>Pokémon Binder Demo </h1>
+<h1>Pokémon Binder</h1>
 
-<label for="sizeSelect">Select binder size:</label>
-<select id="sizeSelect">
-  <option value="3x3">3 x 3</option>
-  <option value="2x2">2 x 2</option>
-  <option value="1x4">1 x 4</option>
-</select>
+<div class="size-inputs">
+  <div class="inputs-row">
+    <label for="colsInput">Columns:</label>
+    <input id="colsInput" type="number" min="1" max="10" />
+    
+    <label for="rowsInput">Rows:</label>
+    <input id="rowsInput" type="number" min="1" max="10" />
+  </div>
+  
+  <div class="buttons-row" style="margin-top: 10px;">
+    <button id="applySizeBtn">Apply Size</button>
+    <button id="resetBtn" style="background:#ff4c4c; color:white; border:none;">Reset Binder</button>
+  </div>
+</div>
+
 
 <div id="binder"></div>
 
-<div class="footer">Click a cell to place a placeholder Pokémon card.<br/>Refresh to clear.</div>
+<div id="pager">
+  <div id="leftArrow" class="arrow">&larr;</div>
+  <div id="pageInfo">Page 1 of 1</div>
+  <div id="rightArrow" class="arrow">&rarr;</div>
+</div>
+
+<div class="footer">
+  Click a cell to toggle a card.<br/>
+  Use left/right arrows to flip binder pages.<br/>
+  Press right arrow on last page to add a new page.<br/>
+  Changing binder size resets all pages.<br/>
+  Your binder is saved automatically!
+</div>
+
+</div>
 
 <script>
   const binder = document.getElementById('binder');
-  const sizeSelect = document.getElementById('sizeSelect');
+  const colsInput = document.getElementById('colsInput');
+  const rowsInput = document.getElementById('rowsInput');
+  const applySizeBtn = document.getElementById('applySizeBtn');
+  const leftArrow = document.getElementById('leftArrow');
+  const rightArrow = document.getElementById('rightArrow');
+  const pageInfo = document.getElementById('pageInfo');
 
-  // Placeholder Pokémon card image (Smat found a random placeholder!)
-  const placeholderCard = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'; // Pikachu sprite
+  const placeholderCard = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png';
 
-  // Create binder grid based on selection
-  function createBinderGrid(sizeStr) {
-    const [cols, rows] = sizeStr.split('x').map(Number);
-    binder.style.gridTemplateColumns = `repeat(${cols}, 90px)`;
-    binder.style.gridTemplateRows = `repeat(${rows}, 120px)`;
+  let currentPageIndex = 0;
+  let binderPages = [];
+  let currentCols = 3;
+  let currentRows = 3;
 
-    binder.innerHTML = ''; // Clear old cells
+  function saveToStorage() {
+    const data = {
+      binderPages,
+      currentPageIndex,
+      currentCols,
+      currentRows
+    };
+    localStorage.setItem('pokemonBinderData', JSON.stringify(data));
+  }
 
-    const totalCells = cols * rows;
-    for(let i = 0; i < totalCells; i++) {
+  function loadFromStorage() {
+    const dataStr = localStorage.getItem('pokemonBinderData');
+    if (!dataStr) return false;
+    try {
+      const data = JSON.parse(dataStr);
+      if (
+        Array.isArray(data.binderPages) &&
+        typeof data.currentPageIndex === 'number' &&
+        typeof data.currentCols === 'number' &&
+        typeof data.currentRows === 'number'
+      ) {
+        binderPages = data.binderPages;
+        currentPageIndex = data.currentPageIndex;
+        currentCols = data.currentCols;
+        currentRows = data.currentRows;
+        return true;
+      }
+    } catch (e) {
+      console.warn('Failed to parse localStorage data:', e);
+    }
+    return false;
+  }
+
+  function createEmptyPage(cols, rows) {
+    return new Array(cols * rows).fill(null);
+  }
+
+  function renderBinder() {
+    binder.style.gridTemplateColumns = `repeat(${currentCols}, 90px)`;
+    binder.style.gridTemplateRows = `repeat(${currentRows}, 120px)`;
+    binder.innerHTML = '';
+
+    const pageData = binderPages[currentPageIndex];
+    for (let i = 0; i < pageData.length; i++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.title = 'Click to add/remove card';
+      if (pageData[i]) {
+        const img = document.createElement('img');
+        img.src = pageData[i];
+        cell.appendChild(img);
+      }
       cell.addEventListener('click', () => {
-        if (cell.querySelector('img')) {
-          cell.innerHTML = ''; // Remove card if exists
+        if (pageData[i]) {
+          pageData[i] = null;
+          cell.innerHTML = '';
         } else {
+          pageData[i] = placeholderCard;
           const img = document.createElement('img');
           img.src = placeholderCard;
-          img.alt = 'Pokémon card placeholder';
           cell.appendChild(img);
         }
+        saveToStorage();
       });
       binder.appendChild(cell);
     }
+
+    updatePageInfo();
+    saveToStorage();
   }
 
-  sizeSelect.addEventListener('change', () => {
-    createBinderGrid(sizeSelect.value);
+  function updatePageInfo() {
+    pageInfo.textContent = `Page ${currentPageIndex + 1} of ${binderPages.length}`;
+  }
+
+  function initBinder(cols, rows) {
+    currentCols = cols;
+    currentRows = rows;
+    binderPages = [createEmptyPage(cols, rows)];
+    currentPageIndex = 0;
+    renderBinder();
+    saveToStorage();
+  }
+
+  applySizeBtn.addEventListener('click', () => {
+    const cols = parseInt(colsInput.value, 10);
+    const rows = parseInt(rowsInput.value, 10);
+    if (
+      isNaN(cols) || isNaN(rows) ||
+      cols < 1 || cols > 10 ||
+      rows < 1 || rows > 10
+    ) {
+      alert('Please enter columns and rows between 1 and 10.');
+      return;
+    }
+    initBinder(cols, rows);
   });
 
-  // Initialize with default size
-  createBinderGrid(sizeSelect.value);
-</script>
+  leftArrow.addEventListener('click', () => {
+    if (currentPageIndex > 0) {
+      currentPageIndex--;
+      renderBinder();
+    }
+  });
 
+  rightArrow.addEventListener('click', () => {
+    if (currentPageIndex < binderPages.length - 1) {
+      currentPageIndex++;
+    } else {
+      binderPages.push(createEmptyPage(currentCols, currentRows));
+      currentPageIndex = binderPages.length - 1;
+    }
+    renderBinder();
+  });
+
+  window.addEventListener('load', () => {
+    if (loadFromStorage()) {
+      colsInput.value = currentCols;
+      rowsInput.value = currentRows;
+      renderBinder();
+    } else {
+      colsInput.value = 3;
+      rowsInput.value = 3;
+      initBinder(3, 3);
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to reset your binder? All your pages will be lost!')) {
+      localStorage.removeItem('pokemonBinderData');
+      colsInput.value = 3;
+      rowsInput.value = 3;
+      initBinder(3, 3);
+    }
+  });
+</script>
 </body>
 </html>
