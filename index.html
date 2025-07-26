@@ -1,3 +1,112 @@
-<html>
-    <title>BinderIt </title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pokémon Binder Demo - Smat Edition</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    color: #222;
+    padding: 20px;
+  }
+  h1 {
+    margin-bottom: 10px;
+  }
+  label, select {
+    font-weight: bold;
+  }
+  #binder {
+    margin-top: 20px;
+    display: grid;
+    gap: 6px;
+    justify-content: start;
+  }
+  .cell {
+    width: 90px;
+    height: 120px;
+    border: 2px solid #aaa;
+    border-radius: 6px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s;
+  }
+  .cell:hover {
+    border-color: #ffcb05;
+  }
+  .cell img {
+    max-width: 80px;
+    max-height: 110px;
+    pointer-events: none;
+  }
+  .footer {
+    margin-top: 30px;
+    font-size: 0.9em;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<h1>Pokémon Binder Demo (Smat’s clumsy version)</h1>
+
+<label for="sizeSelect">Select binder size:</label>
+<select id="sizeSelect">
+  <option value="3x3">3 x 3</option>
+  <option value="2x2">2 x 2</option>
+  <option value="1x4">1 x 4</option>
+</select>
+
+<div id="binder"></div>
+
+<div class="footer">Click a cell to place a placeholder Pokémon card.<br/>Refresh to clear.</div>
+
+<script>
+  const binder = document.getElementById('binder');
+  const sizeSelect = document.getElementById('sizeSelect');
+
+  // Placeholder Pokémon card image (Smat found a random placeholder!)
+  const placeholderCard = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'; // Pikachu sprite
+
+  // Create binder grid based on selection
+  function createBinderGrid(sizeStr) {
+    const [cols, rows] = sizeStr.split('x').map(Number);
+    binder.style.gridTemplateColumns = `repeat(${cols}, 90px)`;
+    binder.style.gridTemplateRows = `repeat(${rows}, 120px)`;
+
+    binder.innerHTML = ''; // Clear old cells
+
+    const totalCells = cols * rows;
+    for(let i = 0; i < totalCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.title = 'Click to add/remove card';
+      cell.addEventListener('click', () => {
+        if (cell.querySelector('img')) {
+          cell.innerHTML = ''; // Remove card if exists
+        } else {
+          const img = document.createElement('img');
+          img.src = placeholderCard;
+          img.alt = 'Pokémon card placeholder';
+          cell.appendChild(img);
+        }
+      });
+      binder.appendChild(cell);
+    }
+  }
+
+  sizeSelect.addEventListener('change', () => {
+    createBinderGrid(sizeSelect.value);
+  });
+
+  // Initialize with default size
+  createBinderGrid(sizeSelect.value);
+</script>
+
+</body>
 </html>
